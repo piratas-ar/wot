@@ -32,6 +32,7 @@ function registrar() {
 # Ayuda
 function help() {
   echo 'wot!'
+  echo "genera una red de confianza entre todas las cuentas de ${domain}"
   echo
   echo 'uso:'
   echo ${helps[@]} \
@@ -74,10 +75,11 @@ function graficar() {
   local _path="$(dirname -- "$0")"
   local _dot="${wot%.asc}.dot"
   local _png="${wot%.asc}.png"
+
   gpg --list-sigs "@${domain}" \
   | "${_path}/sig2dot" >"${_dot}" 2>/dev/null
 
-  neato -Tpng "${_dot}" >"${_png}"
+  circo -Tpng "${_dot}" >"${_png}"
 }
 registrar graficar "genera un grafico ${wot%.asc}.png"
 
