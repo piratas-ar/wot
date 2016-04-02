@@ -14,6 +14,7 @@ set -E
 
 domain="${2:-partidopirata.com.ar}"
 wot="${domain}.wot.asc"
+methods=()
 
 function help() {
   echo 'wot!'
@@ -26,21 +27,25 @@ function help() {
 }
 
 # TODO: implementar :P
+methods+=(listar)
 function listar() {
   :
 }
 
 # Exporta todas las llaves a un archivo WOT
+methods+=(exportar)
 function exportar() {
   gpg --export --armor "@${domain}" >"${wot}"
 }
 
 # Importa el archivo de WOT
+methods+=(importar)
 function importar() {
   gpg --import "${wot}"
 }
 
 # Trae todas las llaves de la WOT y las firmas
+methods+=(firmar)
 function firmar() {
   gpg --fingerprint "@${domain}" \
 	| grep = \
@@ -51,6 +56,8 @@ function firmar() {
 
 # Ejecuta el comando que llamamos
 function init() {
+  # Valida que estemos llamando a un metodo que exista :P
+  echo "${methods[@]}" | grep -qw "${1}" || exit 1
   ${1}
 }
 
