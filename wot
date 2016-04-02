@@ -15,6 +15,7 @@ set -E
 domain="${2:-partidopirata.com.ar}"
 wot="${domain}.wot.asc"
 methods=()
+helps=()
 
 # Chequea que no estamos sourceando
 function es_init() {
@@ -23,7 +24,9 @@ function es_init() {
 
 # Registra métodos permitidos
 function registrar() {
-  methods+=($1)
+  local _method="${1}"; shift
+  methods+=(${_method})
+  helps+=("${_method}:${@};")
 }
 
 # Ayuda
@@ -31,31 +34,31 @@ function help() {
   echo 'wot!'
   echo
   echo 'uso:'
-  echo 'wot help     - esta ayuda'
-  echo "wot exportar - crea un archivo ${wot} para compartir"
-  echo "wot importar - importa ${wot} desde este directorio"
-  echo 'wot firmar   - firma todas las llaves'
+  echo ${helps[@]} \
+  | tr ';' "\n" \
+  | sed -re 's/^\s+//' -e 's/\s+$//' \
+  | column -s : -o ' - ' -t
 }
-registrar help
+registrar help 'esta ayuda'
 
 
 # TODO: implementar :P
 function listar() {
   :
 }
-registrar listar
+registrar listar 'no implementado'
 
 # Exporta todas las llaves a un archivo WOT
 function exportar() {
   gpg --export --armor "@${domain}" >"${wot}"
 }
-registrar exportar
+registrar exportar "crea un archivo ${wot} para compartir"
 
 # Importa el archivo de WOT
 function importar() {
   gpg --import "${wot}"
 }
-registrar importar
+registrar importar "importa ${wot} desde este directorio"
 
 # Trae todas las llaves de la WOT y las firmas
 function firmar() {
@@ -65,7 +68,18 @@ function firmar() {
   | tr -d " " \
   | xargs -rn1 gpg --sign-key
 }
-registrar firmar
+registrar firmar 'firma todas las llaves'
+
+function graficar() {
+  local _path="$(dirname -- "$0")"
+  local _dot="${wot%.asc}.dot"
+  local _png="${wot%.asc}.png"
+  gpg --list-sigs "@${domain}" \
+  | "${_path}/sig2dot" >"${_dot}" 2>/dev/null
+
+  neato -Tpng "${_dot}" >"${_png}"
+}
+registrar graficar "genera un grafico ${wot%.asc}.png"
 
 # Ejecuta el comando que llamamos
 function init() {
@@ -76,4 +90,4 @@ function init() {
 
 # Solo ejecuta la función de inicio si estamos ejecutando el script,
 # no si lo estamos importando desde otro.
-es_init && init $1
+es_init && init ${1:-help}
