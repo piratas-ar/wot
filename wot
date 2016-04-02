@@ -16,6 +16,17 @@ domain="${2:-partidopirata.com.ar}"
 wot="${domain}.wot.asc"
 methods=()
 
+# Chequea que no estamos sourceando
+function es_init() {
+  test 'xwot' = "x$(basename -- "$0")"
+}
+
+# Registra métodos permitidos
+function registrar() {
+  methods+=($1)
+}
+
+# Ayuda
 function help() {
   echo 'wot!'
   echo
@@ -25,27 +36,28 @@ function help() {
   echo "wot importar - importa ${wot} desde este directorio"
   echo 'wot firmar   - firma todas las llaves'
 }
+registrar help
+
 
 # TODO: implementar :P
-methods+=(listar)
 function listar() {
   :
 }
+registrar listar
 
 # Exporta todas las llaves a un archivo WOT
-methods+=(exportar)
 function exportar() {
   gpg --export --armor "@${domain}" >"${wot}"
 }
+registrar exportar
 
 # Importa el archivo de WOT
-methods+=(importar)
 function importar() {
   gpg --import "${wot}"
 }
+registrar importar
 
 # Trae todas las llaves de la WOT y las firmas
-methods+=(firmar)
 function firmar() {
   gpg --fingerprint "@${domain}" \
 	| grep = \
@@ -53,6 +65,7 @@ function firmar() {
   | tr -d " " \
   | xargs -rn1 gpg --sign-key
 }
+registrar firmar
 
 # Ejecuta el comando que llamamos
 function init() {
@@ -63,4 +76,4 @@ function init() {
 
 # Solo ejecuta la función de inicio si estamos ejecutando el script,
 # no si lo estamos importando desde otro.
-test 'xwot' = "x$(basename -- "$0")" && init $1
+es_init && init $1
