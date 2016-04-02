@@ -1,0 +1,59 @@
+#!/bin/bash
+# wot - permite generar una wot en una organización
+#
+# © 2016 fauno <fauno@partidopirata.com.ar>
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved.  This file is offered as-is,
+# without any warranty.
+# 
+# http://www.gnu.org/prep/maintain/html_node/License-Notices-for-Other-Files.html
+set -e
+set -E
+
+domain="${2:-partidopirata.com.ar}"
+wot="${domain}.wot.asc"
+
+function help() {
+  echo 'wot!'
+  echo
+  echo 'uso:'
+  echo 'wot help     - esta ayuda'
+  echo "wot exportar - crea un archivo ${wot} para compartir"
+  echo "wot importar - importa ${wot} desde este directorio"
+  echo 'wot firmar   - firma todas las llaves'
+}
+
+# TODO: implementar :P
+function listar() {
+  :
+}
+
+# Exporta todas las llaves a un archivo WOT
+function exportar() {
+  gpg --export --armor "@${domain}" >"${wot}"
+}
+
+# Importa el archivo de WOT
+function importar() {
+  gpg --import "${wot}"
+}
+
+# Trae todas las llaves de la WOT y las firmas
+function firmar() {
+  gpg --fingerprint "@${domain}" \
+	| grep = \
+  | cut -d = -f2 \
+  | tr -d " " \
+  | xargs -rn1 gpg --sign-key
+}
+
+# Ejecuta el comando que llamamos
+function init() {
+  ${1}
+}
+
+# Solo ejecuta la función de inicio si estamos ejecutando el script,
+# no si lo estamos importando desde otro.
+test 'xwot' = "x$(basename -- "$0")" && init $1
