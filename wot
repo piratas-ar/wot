@@ -9,10 +9,13 @@
 # without any warranty.
 # 
 # http://www.gnu.org/prep/maintain/html_node/License-Notices-for-Other-Files.html
+
+method="${1:-help}" ; shift
+domain="${1:-partidopirata.com.ar}" ; shift
+
 set -e
 set -E
 
-domain="${2:-partidopirata.com.ar}"
 wot="${domain}.wot.asc"
 methods=()
 helps=()
@@ -35,6 +38,12 @@ function help() {
   echo "genera una red de confianza entre todas las cuentas de ${domain}"
   echo
   echo 'uso:'
+  echo '  wot COMANDO DOMINIO OPCIONES'
+  echo
+  echo 'ej:'
+  echo '  wot listar'
+  echo '  wot enviar partidopirata.com.ar hola te mando las llaves'
+  echo
   echo ${helps[@]} \
   | tr ';' "\n" \
   | sed -re 's/^\s+//' -e 's/\s+$//' \
@@ -43,11 +52,16 @@ function help() {
 registrar help 'esta ayuda'
 
 
-# TODO: implementar :P
 function listar() {
-  :
+  gpg --fingerprint "@${domain}" \
+  | grep -A 2 "^pub " \
+  | grep -v = \
+  | grep -oE "0x[A-F0-9]+|<[^>]+>" \
+  | tr -d "<" \
+  | tr -d ">" \
+  | paste - -
 }
-registrar listar 'no implementado'
+registrar listar 'muestra una lista de llaves y direcciones'
 
 # Exporta todas las llaves a un archivo WOT
 function exportar() {
@@ -85,29 +99,24 @@ function graficar() {
 registrar graficar "genera un grafico ${wot%.asc}.png"
 
 function enviar() {
-  gpg --fingerprint "@${domain}" \
-  | grep -A 2 "^pub " \
-  | grep -v = \
-  | grep -oE "0x[A-F0-9]+|<[^>]+>" \
-  | tr -d "<" \
-  | tr -d ">" \
-  | paste - - \
+  listar \
   | while read _llave _email; do
     echo "Enviando llave a ${_email}" >&2
-    cat "${wot}" \
-    | gpg --encrypt --armor --sign --recipient "${_llave}" \
-    | mail -s 'wot!' "${_email}"
+    echo -e "Hola!  Importá el llavero adjunto\n\n$@" \
+    | mail -a "${wot}" -s 'wot!' "${_email}"
   done
 }
-registrar enviar "envía el llavero a todas las participantes"
+registrar enviar "envía el llavero a todas las participantes, con un mensaje opcional"
 
 # Ejecuta el comando que llamamos
 function init() {
   # Valida que estemos llamando a un metodo que exista :P
-  echo "${methods[@]}" | grep -qw "${1}" || exit 1
-  ${1}
+  echo "${methods[@]}" | grep -qw "${method}" || exit 1
+  shift;
+
+  ${method} $@
 }
 
 # Solo ejecuta la función de inicio si estamos ejecutando el script,
 # no si lo estamos importando desde otro.
-es_init && init ${1:-help}
+es_init && init ${method} $@
