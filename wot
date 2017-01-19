@@ -67,6 +67,7 @@ function firmar() {
 	| grep = \
   | cut -d = -f2 \
   | tr -d " " \
+  | sort -u \
   | xargs -rn1 gpg --sign-key
 }
 registrar firmar 'firma todas las llaves'
@@ -82,6 +83,23 @@ function graficar() {
   circo -Tpng "${_dot}" >"${_png}"
 }
 registrar graficar "genera un grafico ${wot%.asc}.png"
+
+function enviar() {
+  gpg --fingerprint "@${domain}" \
+  | grep -A 2 "^pub " \
+  | grep -v = \
+  | grep -oE "0x[A-F0-9]+|<[^>]+>" \
+  | tr -d "<" \
+  | tr -d ">" \
+  | paste - - \
+  | while read _llave _email; do
+    echo "Enviando llave a ${_email}" >&2
+    cat "${wot}" \
+    | gpg --encrypt --armor --sign --recipient "${_llave}" \
+    | mail -s 'wot!' "${_email}"
+  done
+}
+registrar enviar "envía el llavero a todas las participantes"
 
 # Ejecuta el comando que llamamos
 function init() {
